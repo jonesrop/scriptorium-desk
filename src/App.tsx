@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -48,23 +49,24 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <DashboardLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardRouter />} />
-              {/* Additional admin routes */}
+              {/* Admin routes */}
               <Route path="books" element={<div className="p-8 text-center text-muted-foreground">Book Management - Coming Soon</div>} />
               <Route path="users" element={<div className="p-8 text-center text-muted-foreground">User Management - Coming Soon</div>} />
               <Route path="transactions" element={<div className="p-8 text-center text-muted-foreground">Issue/Return - Coming Soon</div>} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">Reports - Coming Soon</div>} />
-              {/* Additional student routes */}
+              {/* Student routes */}
               <Route path="catalog" element={<BookCatalog />} />
               <Route path="my-books" element={<div className="p-8 text-center text-muted-foreground">My Books - Coming Soon</div>} />
               <Route path="favorites" element={<div className="p-8 text-center text-muted-foreground">Favorites - Coming Soon</div>} />

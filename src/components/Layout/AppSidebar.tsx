@@ -27,21 +27,21 @@ import {
 } from '@/components/ui/sidebar';
 
 const adminItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Book Management', url: '/books', icon: BookOpen },
-  { title: 'User Management', url: '/users', icon: Users },
-  { title: 'Issue/Return', url: '/transactions', icon: Clock },
-  { title: 'Reports', url: '/reports', icon: BarChart3 },
-  { title: 'Settings', url: '/settings', icon: Settings },
+  { title: 'Dashboard', url: '/app/dashboard', icon: LayoutDashboard },
+  { title: 'Book Management', url: '/app/books', icon: BookOpen },
+  { title: 'User Management', url: '/app/users', icon: Users },
+  { title: 'Issue/Return', url: '/app/transactions', icon: Clock },
+  { title: 'Reports', url: '/app/reports', icon: BarChart3 },
+  { title: 'Settings', url: '/app/settings', icon: Settings },
 ];
 
 const studentItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Browse Books', url: '/catalog', icon: Search },
-  { title: 'My Books', url: '/my-books', icon: BookOpen },
-  { title: 'Favorites', url: '/favorites', icon: Heart },
-  { title: 'History', url: '/history', icon: Clock },
-  { title: 'Settings', url: '/settings', icon: Settings },
+  { title: 'Dashboard', url: '/app/dashboard', icon: LayoutDashboard },
+  { title: 'Browse Books', url: '/app/catalog', icon: Search },
+  { title: 'My Books', url: '/app/my-books', icon: BookOpen },
+  { title: 'Favorites', url: '/app/favorites', icon: Heart },
+  { title: 'History', url: '/app/history', icon: Clock },
+  { title: 'Settings', url: '/app/settings', icon: Settings },
 ];
 
 export function AppSidebar() {

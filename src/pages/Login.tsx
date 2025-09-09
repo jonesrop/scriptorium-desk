@@ -17,7 +17,7 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
