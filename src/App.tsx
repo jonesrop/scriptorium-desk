@@ -11,6 +11,10 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import BookCatalog from "./pages/BookCatalog";
+import BookManagement from "./pages/BookManagement";
+import UserManagement from "./pages/UserManagement";
+import TransactionManagement from "./pages/TransactionManagement";
+import MyBooks from "./pages/MyBooks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,13 +66,13 @@ const App = () => (
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardRouter />} />
               {/* Admin routes */}
-              <Route path="books" element={<div className="p-8 text-center text-muted-foreground">Book Management - Coming Soon</div>} />
-              <Route path="users" element={<div className="p-8 text-center text-muted-foreground">User Management - Coming Soon</div>} />
-              <Route path="transactions" element={<div className="p-8 text-center text-muted-foreground">Issue/Return - Coming Soon</div>} />
+              <Route path="books" element={<BookManagement />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="transactions" element={<TransactionManagement />} />
               <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">Reports - Coming Soon</div>} />
               {/* Student routes */}
               <Route path="catalog" element={<BookCatalog />} />
-              <Route path="my-books" element={<div className="p-8 text-center text-muted-foreground">My Books - Coming Soon</div>} />
+              <Route path="my-books" element={<MyBooks />} />
               <Route path="favorites" element={<div className="p-8 text-center text-muted-foreground">Favorites - Coming Soon</div>} />
               <Route path="history" element={<div className="p-8 text-center text-muted-foreground">Reading History - Coming Soon</div>} />
               <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">Settings - Coming Soon</div>} />
