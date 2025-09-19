@@ -61,7 +61,7 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-6">
-                <Link to="/login">Access System</Link>
+                <Link to="/auth">Access System</Link>
               </Button>
               <Button 
                 variant="outline" 
@@ -117,7 +117,7 @@ const Index = () => {
             Join thousands of libraries already using LibraryPro to streamline their operations
           </p>
           <Button asChild size="lg" className="text-lg px-8 py-6">
-            <Link to="/login">Access Library System</Link>
+            <Link to="/auth">Access Library System</Link>
           </Button>
         </div>
       </div>

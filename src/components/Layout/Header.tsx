@@ -9,11 +9,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { Badge } from '@/components/ui/badge';
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { profile, signOut } = useSupabaseAuth();
 
   return (
     <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
@@ -41,8 +41,8 @@ export function Header() {
                 <User className="h-4 w-4 text-white" />
               </div>
               <div className="text-left">
-                <div className="text-sm font-medium">{user?.firstName} {user?.lastName}</div>
-                <div className="text-xs text-muted-foreground capitalize">{user?.role}</div>
+                <div className="text-sm font-medium">{profile?.first_name} {profile?.last_name}</div>
+                <div className="text-xs text-muted-foreground capitalize">{profile?.role}</div>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -57,7 +57,7 @@ export function Header() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

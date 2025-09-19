@@ -11,7 +11,7 @@ import {
   Heart
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 import {
   Sidebar,
@@ -45,12 +45,12 @@ const studentItems = [
 ];
 
 export function AppSidebar() {
-  const { user } = useAuth();
+  const { profile } = useSupabaseAuth();
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const items = user?.role === 'admin' ? adminItems : studentItems;
+  const items = profile?.role === 'admin' ? adminItems : studentItems;
   const isCollapsed = state === 'collapsed';
 
   const isActive = (path: string) => currentPath === path;
@@ -67,7 +67,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div>
               <h2 className="font-display text-lg font-bold text-sidebar-foreground">LibraryPro</h2>
-              <p className="text-xs text-sidebar-foreground/70 capitalize">{user?.role} Panel</p>
+              <p className="text-xs text-sidebar-foreground/70 capitalize">{profile?.role} Panel</p>
             </div>
           )}
         </div>
@@ -76,7 +76,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {!isCollapsed && (user?.role === 'admin' ? 'Administration' : 'Library Services')}
+            {!isCollapsed && (profile?.role === 'admin' ? 'Administration' : 'Library Services')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -99,7 +99,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {user?.role === 'admin' && !isCollapsed && (
+        {profile?.role === 'admin' && !isCollapsed && (
           <SidebarGroup>
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>

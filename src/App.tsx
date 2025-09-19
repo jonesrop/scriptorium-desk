@@ -3,13 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { DashboardRouter } from "@/components/DashboardRouter";
 
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import AdminDashboard from "./pages/AdminDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
+import Auth from '@/pages/Auth';
 import BookCatalog from "./pages/BookCatalog";
 import BookManagement from "./pages/BookManagement";
 import UserManagement from "./pages/UserManagement";
@@ -19,42 +19,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected Route Component
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
-}
-
-// Dashboard Router Component
-function DashboardRouter() {
-  const { user } = useAuth();
-  
-  if (user?.role === 'admin') {
-    return <AdminDashboard />;
-  } else {
-    return <StudentDashboard />;
-  }
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
+      <SupabaseAuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/auth" element={<Auth />} />
             <Route
               path="/app"
               element={
@@ -80,7 +54,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
+      </SupabaseAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
