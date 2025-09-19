@@ -14,7 +14,187 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      book_reservations: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          request_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          request_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          request_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_reservations_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          author: string
+          available_copies: number
+          borrow_count: number
+          call_number: string
+          created_at: string
+          description: string | null
+          genre: string
+          id: string
+          isbn: string | null
+          publication_year: number | null
+          publisher: string
+          title: string
+          total_copies: number
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          available_copies?: number
+          borrow_count?: number
+          call_number: string
+          created_at?: string
+          description?: string | null
+          genre: string
+          id?: string
+          isbn?: string | null
+          publication_year?: number | null
+          publisher: string
+          title: string
+          total_copies?: number
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          available_copies?: number
+          borrow_count?: number
+          call_number?: string
+          created_at?: string
+          description?: string | null
+          genre?: string
+          id?: string
+          isbn?: string | null
+          publication_year?: number | null
+          publisher?: string
+          title?: string
+          total_copies?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      issued_books: {
+        Row: {
+          book_id: string
+          created_at: string
+          due_date: string
+          fine_amount: number
+          id: string
+          issue_date: string
+          renewal_count: number
+          return_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          due_date: string
+          fine_amount?: number
+          id?: string
+          issue_date?: string
+          renewal_count?: number
+          return_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          due_date?: string
+          fine_amount?: number
+          id?: string
+          issue_date?: string
+          renewal_count?: number
+          return_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issued_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          contact_number: string | null
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          is_active: boolean
+          last_name: string
+          role: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          contact_number?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          is_active?: boolean
+          last_name: string
+          role?: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          contact_number?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          is_active?: boolean
+          last_name?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
