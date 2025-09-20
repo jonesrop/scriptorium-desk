@@ -14,6 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      authors: {
+        Row: {
+          biography: string | null
+          birth_date: string | null
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          nationality: string | null
+          updated_at: string
+        }
+        Insert: {
+          biography?: string | null
+          birth_date?: string | null
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          nationality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          biography?: string | null
+          birth_date?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          nationality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      book_authors: {
+        Row: {
+          author_id: string
+          book_id: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          book_id: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          book_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_authors_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "authors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_authors_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_copies: {
+        Row: {
+          book_id: string
+          condition: string
+          copy_number: string
+          created_at: string
+          id: string
+          is_available: boolean
+          last_maintenance: string | null
+          location: string | null
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          condition?: string
+          copy_number: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          last_maintenance?: string | null
+          location?: string | null
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          condition?: string
+          copy_number?: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          last_maintenance?: string | null
+          location?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_reservations: {
         Row: {
           book_id: string
@@ -52,12 +201,54 @@ export type Database = {
           },
         ]
       }
+      book_reviews: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          is_approved: boolean
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_reviews_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author: string
           available_copies: number
           borrow_count: number
           call_number: string
+          category_id: string | null
           created_at: string
           description: string | null
           genre: string
@@ -65,6 +256,7 @@ export type Database = {
           isbn: string | null
           publication_year: number | null
           publisher: string
+          publisher_id: string | null
           title: string
           total_copies: number
           updated_at: string
@@ -74,6 +266,7 @@ export type Database = {
           available_copies?: number
           borrow_count?: number
           call_number: string
+          category_id?: string | null
           created_at?: string
           description?: string | null
           genre: string
@@ -81,6 +274,7 @@ export type Database = {
           isbn?: string | null
           publication_year?: number | null
           publisher: string
+          publisher_id?: string | null
           title: string
           total_copies?: number
           updated_at?: string
@@ -90,6 +284,7 @@ export type Database = {
           available_copies?: number
           borrow_count?: number
           call_number?: string
+          category_id?: string | null
           created_at?: string
           description?: string | null
           genre?: string
@@ -97,11 +292,98 @@ export type Database = {
           isbn?: string | null
           publication_year?: number | null
           publisher?: string
+          publisher_id?: string | null
           title?: string
           total_copies?: number
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "books_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "publishers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
         Relationships: []
+      }
+      fines: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string | null
+          id: string
+          issued_book_id: string | null
+          paid_date: string | null
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          issued_book_id?: string | null
+          paid_date?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          issued_book_id?: string | null
+          paid_date?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fines_issued_book_id_fkey"
+            columns: ["issued_book_id"]
+            isOneToOne: false
+            referencedRelation: "issued_books"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       issued_books: {
         Row: {
@@ -153,6 +435,75 @@ export type Database = {
           },
         ]
       }
+      library_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           contact_number: string | null
@@ -194,6 +545,83 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      publishers: {
+        Row: {
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      reading_history: {
+        Row: {
+          book_id: string
+          created_at: string
+          finished_reading: string | null
+          id: string
+          notes: string | null
+          reading_status: string
+          started_reading: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          finished_reading?: string | null
+          id?: string
+          notes?: string | null
+          reading_status?: string
+          started_reading?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          finished_reading?: string | null
+          id?: string
+          notes?: string | null
+          reading_status?: string
+          started_reading?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_history_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
