@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Calendar, Clock, AlertTriangle, Search, Heart } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 interface BorrowedBook {
   id: string;
@@ -40,7 +40,7 @@ interface ReservedBook {
 }
 
 const MyBooks = () => {
-  const { user } = useAuth();
+  const { profile } = useSupabaseAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const [currentBooks] = useState<BorrowedBook[]>([
