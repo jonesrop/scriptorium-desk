@@ -46,19 +46,6 @@ export interface BookReservation {
   status: 'pending' | 'fulfilled' | 'cancelled';
 }
 
-export interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-export interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<boolean>;
-  logout: () => void;
-  isLoading: boolean;
-}
-
 export interface DashboardStats {
   totalBooks: number;
   totalUsers: number;
