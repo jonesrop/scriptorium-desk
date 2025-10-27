@@ -13,7 +13,7 @@ import {
   Heart,
   AlertCircle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 // Mock data for student dashboard
 const mockBorrowedBooks = [
@@ -94,7 +94,7 @@ const mockRecentHistory = [
 ];
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { profile } = useSupabaseAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   const getDaysUntilDue = (dueDate: Date) => {
@@ -132,7 +132,7 @@ const StudentDashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">
-            Welcome back, {user?.firstName}!
+            Welcome back, {profile?.first_name}!
           </h1>
           <p className="text-muted-foreground">Here's your library activity and recommendations</p>
         </div>
