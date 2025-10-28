@@ -19,7 +19,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -31,7 +31,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -43,7 +43,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -156,6 +156,70 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "book_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_favorites: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_favorites_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_recommendations: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          score: number
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          score?: number
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_recommendations_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
             referencedRelation: "books"
@@ -393,6 +457,7 @@ export type Database = {
           fine_amount: number
           id: string
           issue_date: string
+          max_renewals: number
           renewal_count: number
           return_date: string | null
           status: string
@@ -406,6 +471,7 @@ export type Database = {
           fine_amount?: number
           id?: string
           issue_date?: string
+          max_renewals?: number
           renewal_count?: number
           return_date?: string | null
           status?: string
@@ -419,6 +485,7 @@ export type Database = {
           fine_amount?: number
           id?: string
           issue_date?: string
+          max_renewals?: number
           renewal_count?: number
           return_date?: string | null
           status?: string
@@ -579,6 +646,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reading_goals: {
+        Row: {
+          created_at: string
+          current_value: number
+          end_date: string
+          goal_type: string
+          id: string
+          start_date: string
+          status: string
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number
+          end_date: string
+          goal_type?: string
+          id?: string
+          start_date: string
+          status?: string
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          end_date?: string
+          goal_type?: string
+          id?: string
+          start_date?: string
+          status?: string
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reading_history: {
         Row: {
           book_id: string
@@ -628,7 +734,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_renew_book: { Args: { issued_book_id: string }; Returns: boolean }
+      renew_book: {
+        Args: { issued_book_id: string; renewal_days?: number }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
