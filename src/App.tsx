@@ -15,6 +15,8 @@ import BookManagement from "./pages/BookManagement";
 import UserManagement from "./pages/UserManagement";
 import TransactionManagement from "./pages/TransactionManagement";
 import MyBooks from "./pages/MyBooks";
+import Favorites from "./pages/Favorites";
+import ReadingStats from "./pages/ReadingStats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,8 +49,8 @@ const App = () => (
               {/* Student routes */}
               <Route path="catalog" element={<BookCatalog />} />
               <Route path="my-books" element={<MyBooks />} />
-              <Route path="favorites" element={<div className="p-8 text-center text-muted-foreground">Favorites - Coming Soon</div>} />
-              <Route path="history" element={<div className="p-8 text-center text-muted-foreground">Reading History - Coming Soon</div>} />
+            <Route path="favorites" element={<Favorites />} />
+            <Route path="history" element={<ReadingStats />} />
               <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">Settings - Coming Soon</div>} />
             </Route>
             <Route path="*" element={<NotFound />} />
