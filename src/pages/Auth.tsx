@@ -6,11 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 import { BookOpen, Loader2 } from 'lucide-react';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   const [signInData, setSignInData] = useState({ email: '', password: '' });
   const [signUpData, setSignUpData] = useState({
     email: '',
@@ -56,6 +59,37 @@ export default function Auth() {
       role: signUpData.role
     });
     
+    setIsLoading(false);
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+
+    if (error) {
+      const { useToast } = await import('@/hooks/use-toast');
+      const { toast } = useToast();
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const { useToast } = await import('@/hooks/use-toast');
+      const { toast } = useToast();
+      toast({
+        title: "Check your email",
+        description: "We sent you a password reset link.",
+      });
+      setShowPasswordReset(false);
+      setResetEmail('');
+    }
+
     setIsLoading(false);
   };
 
@@ -116,10 +150,19 @@ export default function Auth() {
                     />
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col space-y-2">
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowPasswordReset(true)}
+                  >
+                    Forgot Password?
                   </Button>
                 </CardFooter>
               </form>
@@ -222,6 +265,41 @@ export default function Auth() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={showPasswordReset} onOpenChange={setShowPasswordReset}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Enter your email address and we'll send you a link to reset your password.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePasswordReset}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowPasswordReset(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Send Reset Link
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
