@@ -689,33 +689,27 @@ export type Database = {
         Row: {
           book_id: string
           created_at: string
-          finished_reading: string | null
           id: string
           notes: string | null
           reading_status: string
-          started_reading: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           book_id: string
           created_at?: string
-          finished_reading?: string | null
           id?: string
           notes?: string | null
           reading_status?: string
-          started_reading?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           book_id?: string
           created_at?: string
-          finished_reading?: string | null
           id?: string
           notes?: string | null
           reading_status?: string
-          started_reading?: string | null
           updated_at?: string
           user_id?: string
         }
