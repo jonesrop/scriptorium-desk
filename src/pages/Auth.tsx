@@ -21,8 +21,7 @@ export default function Auth() {
     confirmPassword: '',
     username: '',
     first_name: '',
-    last_name: '',
-    role: 'student' as 'admin' | 'student'
+    last_name: ''
   });
 
   const { signIn, signUp, user, isLoading: authLoading } = useSupabaseAuth();
@@ -55,8 +54,7 @@ export default function Auth() {
     await signUp(signUpData.email, signUpData.password, {
       username: signUpData.username,
       first_name: signUpData.first_name,
-      last_name: signUpData.last_name,
-      role: signUpData.role
+      last_name: signUpData.last_name
     });
     
     setIsLoading(false);
@@ -222,18 +220,7 @@ export default function Auth() {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={signUpData.role} onValueChange={(value: 'admin' | 'student') => setSignUpData({ ...signUpData, role: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Role selection removed for security - all users default to 'student' */}
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
