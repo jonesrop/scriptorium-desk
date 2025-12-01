@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,99 +8,128 @@ import {
   Filter, 
   BookOpen, 
   User, 
-  Calendar,
-  Star,
   Heart,
-  Plus
+  Plus,
+  Loader2,
+  Star
 } from 'lucide-react';
-import { Book } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
-// Mock book data
-const mockBooks: Book[] = [
-  {
-    id: '1',
-    callNumber: 'CS001.123',
-    title: 'Introduction to Algorithms',
-    author: 'Thomas H. Cormen',
-    publisher: 'MIT Press',
-    genre: 'Computer Science',
-    totalCopies: 5,
-    availableCopies: 3,
-    isbn: '978-0262033848',
-    publicationYear: 2009,
-    description: 'A comprehensive textbook covering algorithms and data structures.',
-    createdAt: new Date('2024-01-01'),
-    borrowCount: 45,
-  },
-  {
-    id: '2',
-    callNumber: 'MATH001.456',
-    title: 'Calculus: Early Transcendentals',
-    author: 'James Stewart',
-    publisher: 'Cengage Learning',
-    genre: 'Mathematics',
-    totalCopies: 8,
-    availableCopies: 2,
-    isbn: '978-1285741550',
-    publicationYear: 2015,
-    description: 'Complete calculus textbook for undergraduate students.',
-    createdAt: new Date('2024-01-15'),
-    borrowCount: 67,
-  },
-  {
-    id: '3',
-    callNumber: 'PHYS001.789',
-    title: 'Fundamentals of Physics',
-    author: 'David Halliday',
-    publisher: 'Wiley',
-    genre: 'Physics',
-    totalCopies: 6,
-    availableCopies: 0,
-    isbn: '978-1118230718',
-    publicationYear: 2013,
-    description: 'Comprehensive introduction to physics principles.',
-    createdAt: new Date('2024-02-01'),
-    borrowCount: 38,
-  },
-  {
-    id: '4',
-    callNumber: 'CHEM001.012',
-    title: 'Organic Chemistry',
-    author: 'Paula Yurkanis Bruice',
-    publisher: 'Pearson',
-    genre: 'Chemistry',
-    totalCopies: 4,
-    availableCopies: 1,
-    isbn: '978-0134042282',
-    publicationYear: 2016,
-    description: 'Modern approach to organic chemistry with biological applications.',
-    createdAt: new Date('2024-01-20'),
-    borrowCount: 29,
-  },
-];
+interface Book {
+  id: string;
+  call_number: string;
+  title: string;
+  author: string;
+  publisher: string;
+  genre: string;
+  isbn?: string;
+  total_copies: number;
+  available_copies: number;
+  description?: string;
+  publication_year?: number;
+  borrow_count: number;
+}
 
 const BookCatalog = () => {
+  const { toast } = useToast();
+  const { user } = useSupabaseAuth();
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  const genres = ['All', ...Array.from(new Set(mockBooks.map(book => book.genre)))];
+  useEffect(() => {
+    fetchBooks();
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
 
-  const filteredBooks = mockBooks.filter(book => {
+  const fetchBooks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .order('title');
+
+      if (error) throw error;
+      setBooks((data || []) as Book[]);
+    } catch (error: any) {
+      toast({
+        title: "Error Loading Books",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('book_favorites')
+        .select('book_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setFavorites(data.map(fav => fav.book_id));
+    } catch (error: any) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const toggleFavorite = async (bookId: string) => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to add favorites.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      if (favorites.includes(bookId)) {
+        const { error } = await supabase
+          .from('book_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('book_id', bookId);
+
+        if (error) throw error;
+        setFavorites(favorites.filter(id => id !== bookId));
+      } else {
+        const { error } = await supabase
+          .from('book_favorites')
+          .insert([{ user_id: user.id, book_id: bookId }]);
+
+        if (error) throw error;
+        setFavorites([...favorites, bookId]);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const genres = ['All', ...Array.from(new Set(books.map(book => book.genre)))];
+
+  const filteredBooks = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          book.genre.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGenre = selectedGenre === 'All' || book.genre === selectedGenre;
     return matchesSearch && matchesGenre;
   });
-
-  const toggleFavorite = (bookId: string) => {
-    setFavorites(prev => 
-      prev.includes(bookId) 
-        ? prev.filter(id => id !== bookId)
-        : [...prev, bookId]
-    );
-  };
 
   const getAvailabilityBadge = (available: number, total: number) => {
     if (available === 0) {
@@ -111,9 +140,16 @@ const BookCatalog = () => {
     return <Badge variant="secondary" className="bg-success/20 text-success-foreground">Available</Badge>;
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Book Catalog</h1>
@@ -121,7 +157,6 @@ const BookCatalog = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <Card className="shadow-soft">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -144,28 +179,17 @@ const BookCatalog = () => {
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
               </select>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Results Summary */}
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredBooks.length} of {mockBooks.length} books
+          Showing {filteredBooks.length} of {books.length} books
         </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">Sort by Title</Button>
-          <Button variant="outline" size="sm">Sort by Author</Button>
-          <Button variant="outline" size="sm">Sort by Popularity</Button>
-        </div>
       </div>
 
-      {/* Books Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredBooks.map((book) => (
           <Card key={book.id} className="shadow-soft hover:shadow-medium transition-all duration-200 hover:-translate-y-1">
@@ -178,7 +202,7 @@ const BookCatalog = () => {
                     {book.author}
                   </CardDescription>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {book.publisher} • {book.publicationYear}
+                    {book.publisher} • {book.publication_year}
                   </p>
                 </div>
                 <Button
@@ -203,29 +227,29 @@ const BookCatalog = () => {
                 <Badge variant="outline" className="text-xs">
                   {book.genre}
                 </Badge>
-                <span className="text-xs text-muted-foreground">#{book.callNumber}</span>
+                <span className="text-xs text-muted-foreground">#{book.call_number}</span>
               </div>
 
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {book.description}
+                {book.description || 'No description available'}
               </p>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Availability:</span>
-                  {getAvailabilityBadge(book.availableCopies, book.totalCopies)}
+                  {getAvailabilityBadge(book.available_copies, book.total_copies)}
                 </div>
                 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Copies:</span>
-                  <span>{book.availableCopies} of {book.totalCopies} available</span>
+                  <span>{book.available_copies} of {book.total_copies} available</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Borrowed:</span>
                   <div className="flex items-center gap-1">
                     <Star className="h-3 w-3 text-secondary" />
-                    <span>{book.borrowCount} times</span>
+                    <span>{book.borrow_count} times</span>
                   </div>
                 </div>
               </div>
@@ -233,10 +257,10 @@ const BookCatalog = () => {
               <div className="flex gap-2 pt-2">
                 <Button 
                   className="flex-1" 
-                  disabled={book.availableCopies === 0}
+                  disabled={book.available_copies === 0}
                   size="sm"
                 >
-                  {book.availableCopies > 0 ? (
+                  {book.available_copies > 0 ? (
                     <>
                       <BookOpen className="h-4 w-4 mr-2" />
                       Borrow
@@ -257,12 +281,11 @@ const BookCatalog = () => {
         ))}
       </div>
 
-      {/* Load More */}
-      <div className="text-center">
-        <Button variant="outline" className="px-8">
-          Load More Books
-        </Button>
-      </div>
+      {filteredBooks.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          No books found matching your search criteria.
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,101 +8,130 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Plus, Edit, Trash2, Search } from 'lucide-react';
+import { BookOpen, Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Book {
   id: string;
+  call_number: string;
   title: string;
   author: string;
   publisher: string;
   genre: string;
-  isbn: string;
-  quantity: number;
-  available: number;
-  description: string;
-  publishedYear: number;
+  isbn?: string;
+  total_copies: number;
+  available_copies: number;
+  description?: string;
+  publication_year?: number;
 }
 
 const BookManagement = () => {
   const { toast } = useToast();
-  const [books, setBooks] = useState<Book[]>([
-    {
-      id: 'BK001',
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      publisher: 'Scribner',
-      genre: 'Fiction',
-      isbn: '978-0-7432-7356-5',
-      quantity: 5,
-      available: 3,
-      description: 'A classic American novel set in the Jazz Age.',
-      publishedYear: 1925
-    },
-    {
-      id: 'BK002',
-      title: 'To Kill a Mockingbird',
-      author: 'Harper Lee',
-      publisher: 'J.B. Lippincott & Co.',
-      genre: 'Fiction',
-      isbn: '978-0-06-112008-4',
-      quantity: 4,
-      available: 4,
-      description: 'A novel about racial injustice and childhood innocence.',
-      publishedYear: 1960
-    }
-  ]);
-  
-  const [newBook, setNewBook] = useState<Omit<Book, 'id' | 'available'>>({
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newBook, setNewBook] = useState({
+    call_number: '',
     title: '',
     author: '',
     publisher: '',
     genre: '',
     isbn: '',
-    quantity: 1,
+    total_copies: 1,
     description: '',
-    publishedYear: new Date().getFullYear()
+    publication_year: new Date().getFullYear()
   });
-  
   const [searchTerm, setSearchTerm] = useState('');
 
   const genres = ['Fiction', 'Non-Fiction', 'Science', 'History', 'Biography', 'Technology', 'Art', 'Philosophy'];
 
-  const handleAddBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const bookId = `BK${String(books.length + 1).padStart(3, '0')}`;
-    const book: Book = {
-      ...newBook,
-      id: bookId,
-      available: newBook.quantity
-    };
-    
-    setBooks([...books, book]);
-    setNewBook({
-      title: '',
-      author: '',
-      publisher: '',
-      genre: '',
-      isbn: '',
-      quantity: 1,
-      description: '',
-      publishedYear: new Date().getFullYear()
-    });
-    
-    toast({
-      title: "Book Added Successfully",
-      description: `"${book.title}" has been added to the library catalog.`,
-    });
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBooks(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error Loading Books",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteBook = (bookId: string) => {
-    setBooks(books.filter(book => book.id !== bookId));
-    toast({
-      title: "Book Deleted",
-      description: "The book has been removed from the catalog.",
-      variant: "destructive"
-    });
+  const handleAddBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .insert([{
+          ...newBook,
+          available_copies: newBook.total_copies
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBooks([data, ...books]);
+      setNewBook({
+        call_number: '',
+        title: '',
+        author: '',
+        publisher: '',
+        genre: '',
+        isbn: '',
+        total_copies: 1,
+        description: '',
+        publication_year: new Date().getFullYear()
+      });
+
+      toast({
+        title: "Book Added Successfully",
+        description: `"${data.title}" has been added to the library catalog.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Adding Book",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteBook = async (bookId: string) => {
+    try {
+      const { error } = await supabase
+        .from('books')
+        .delete()
+        .eq('id', bookId);
+
+      if (error) throw error;
+
+      setBooks(books.filter(book => book.id !== bookId));
+      toast({
+        title: "Book Deleted",
+        description: "The book has been removed from the catalog.",
+        variant: "destructive"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Deleting Book",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredBooks = books.filter(book =>
@@ -110,6 +139,14 @@ const BookManagement = () => {
     book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.genre.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -139,6 +176,16 @@ const BookManagement = () => {
               <form onSubmit={handleAddBook} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="call_number">Call Number *</Label>
+                    <Input
+                      id="call_number"
+                      value={newBook.call_number}
+                      onChange={(e) => setNewBook({...newBook, call_number: e.target.value})}
+                      placeholder="e.g., CS001.123"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="title">Book Title *</Label>
                     <Input
                       id="title"
@@ -148,6 +195,9 @@ const BookManagement = () => {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="author">Author *</Label>
                     <Input
@@ -158,18 +208,19 @@ const BookManagement = () => {
                       required
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="publisher">Publisher</Label>
+                    <Label htmlFor="publisher">Publisher *</Label>
                     <Input
                       id="publisher"
                       value={newBook.publisher}
                       onChange={(e) => setNewBook({...newBook, publisher: e.target.value})}
                       placeholder="Enter publisher name"
+                      required
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="genre">Genre *</Label>
                     <Select 
@@ -186,9 +237,6 @@ const BookManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="isbn">ISBN</Label>
                     <Input
@@ -199,27 +247,28 @@ const BookManagement = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity *</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={newBook.quantity}
-                      onChange={(e) => setNewBook({...newBook, quantity: parseInt(e.target.value) || 1})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="year">Published Year</Label>
                     <Input
                       id="year"
                       type="number"
                       min="1000"
                       max={new Date().getFullYear()}
-                      value={newBook.publishedYear}
-                      onChange={(e) => setNewBook({...newBook, publishedYear: parseInt(e.target.value) || new Date().getFullYear()})}
+                      value={newBook.publication_year}
+                      onChange={(e) => setNewBook({...newBook, publication_year: parseInt(e.target.value) || new Date().getFullYear()})}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="total_copies">Number of Copies *</Label>
+                  <Input
+                    id="total_copies"
+                    type="number"
+                    min="1"
+                    value={newBook.total_copies}
+                    onChange={(e) => setNewBook({...newBook, total_copies: parseInt(e.target.value) || 1})}
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -268,11 +317,11 @@ const BookManagement = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Book ID</TableHead>
+                      <TableHead>Call Number</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Author</TableHead>
                       <TableHead>Genre</TableHead>
-                      <TableHead>Quantity</TableHead>
+                      <TableHead>Total</TableHead>
                       <TableHead>Available</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -281,22 +330,22 @@ const BookManagement = () => {
                   <TableBody>
                     {filteredBooks.map((book) => (
                       <TableRow key={book.id}>
-                        <TableCell className="font-mono">{book.id}</TableCell>
+                        <TableCell className="font-mono">{book.call_number}</TableCell>
                         <TableCell className="font-medium">{book.title}</TableCell>
                         <TableCell>{book.author}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">{book.genre}</Badge>
                         </TableCell>
-                        <TableCell>{book.quantity}</TableCell>
-                        <TableCell>{book.available}</TableCell>
+                        <TableCell>{book.total_copies}</TableCell>
+                        <TableCell>{book.available_copies}</TableCell>
                         <TableCell>
-                          <Badge variant={book.available > 0 ? "default" : "destructive"}>
-                            {book.available > 0 ? "Available" : "Out of Stock"}
+                          <Badge variant={book.available_copies > 0 ? "default" : "destructive"}>
+                            {book.available_copies > 0 ? "Available" : "Out of Stock"}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" disabled>
                               <Edit className="h-3 w-3" />
                             </Button>
                             <Button 

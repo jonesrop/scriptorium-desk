@@ -7,60 +7,42 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, BookOpen, UserCheck, Calendar, Search, AlertTriangle } from 'lucide-react';
+import { Clock, BookOpen, UserCheck, Search, AlertTriangle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
   id: string;
-  bookId: string;
-  bookTitle: string;
-  userId: string;
-  userName: string;
-  issueDate: string;
-  dueDate: string;
-  returnDate?: string;
+  book_id: string;
+  user_id: string;
+  issue_date: string;
+  due_date: string;
+  return_date?: string;
   status: 'issued' | 'returned' | 'overdue';
-  fine: number;
+  fine_amount: number;
+  books?: { title: string };
+  profiles?: { first_name: string; last_name: string };
+}
+
+interface Book {
+  id: string;
+  title: string;
+  available_copies: number;
+}
+
+interface User {
+  user_id: string;
+  first_name: string;
+  last_name: string;
 }
 
 const TransactionManagement = () => {
   const { toast } = useToast();
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: 'TXN001',
-      bookId: 'BK001',
-      bookTitle: 'The Great Gatsby',
-      userId: 'ST001',
-      userName: 'John Doe',
-      issueDate: '2024-01-15',
-      dueDate: '2024-01-29',
-      status: 'issued',
-      fine: 0
-    },
-    {
-      id: 'TXN002',
-      bookId: 'BK002',
-      bookTitle: 'To Kill a Mockingbird',
-      userId: 'ST002',
-      userName: 'Jane Smith',
-      issueDate: '2024-01-10',
-      dueDate: '2024-01-24',
-      returnDate: '2024-01-22',
-      status: 'returned',
-      fine: 0
-    },
-    {
-      id: 'TXN003',
-      bookId: 'BK003',
-      bookTitle: '1984',
-      userId: 'ST003',
-      userName: 'Mike Johnson',
-      issueDate: '2023-12-20',
-      dueDate: '2024-01-03',
-      status: 'overdue',
-      fine: 15
-    }
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [issueForm, setIssueForm] = useState({
     bookId: '',
@@ -73,52 +55,81 @@ const TransactionManagement = () => {
     returnDate: new Date().toISOString().split('T')[0]
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  // Mock data for books and users
-  const books = [
-    { id: 'BK001', title: 'The Great Gatsby', available: 3 },
-    { id: 'BK002', title: 'To Kill a Mockingbird', available: 4 },
-    { id: 'BK003', title: '1984', available: 2 },
-    { id: 'BK004', title: 'Pride and Prejudice', available: 1 }
-  ];
+  const fetchData = async () => {
+    try {
+      const [transactionsRes, booksRes, usersRes] = await Promise.all([
+        supabase
+          .from('issued_books')
+          .select('*')
+          .order('issue_date', { ascending: false }),
+        supabase
+          .from('books')
+          .select('id, title, available_copies')
+          .gt('available_copies', 0),
+        supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name')
+      ]);
 
-  const users = [
-    { id: 'ST001', name: 'John Doe' },
-    { id: 'ST002', name: 'Jane Smith' },
-    { id: 'ST003', name: 'Mike Johnson' },
-    { id: 'ST004', name: 'Sarah Wilson' }
-  ];
+      if (transactionsRes.error) throw transactionsRes.error;
+      if (booksRes.error) throw booksRes.error;
+      if (usersRes.error) throw usersRes.error;
 
-  const calculateDaysOverdue = (dueDate: string) => {
-    const due = new Date(dueDate);
-    const today = new Date();
-    const diffTime = today.getTime() - due.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
+      // Fetch book and user details separately
+      const transactionsWithDetails = await Promise.all(
+        (transactionsRes.data || []).map(async (transaction) => {
+          const book = await supabase
+            .from('books')
+            .select('title')
+            .eq('id', transaction.book_id)
+            .single();
+          
+          const user = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('user_id', transaction.user_id)
+            .single();
+
+          return {
+            ...transaction,
+            books: book.data,
+            profiles: user.data
+          };
+        })
+      );
+
+      setTransactions(transactionsWithDetails as Transaction[]);
+      setBooks(booksRes.data || []);
+      setUsers(usersRes.data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error Loading Data",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const calculateFine = (dueDate: string) => {
-    const daysOverdue = calculateDaysOverdue(dueDate);
-    return daysOverdue * 1; // $1 per day fine
-  };
-
-  const handleIssueBook = (e: React.FormEvent) => {
+  const handleIssueBook = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const book = books.find(b => b.id === issueForm.bookId);
-    const user = users.find(u => u.id === issueForm.userId);
-    
-    if (!book || !user) {
+    if (!book) {
       toast({
         title: "Error",
-        description: "Please select valid book and user.",
+        description: "Please select a valid book.",
         variant: "destructive"
       });
       return;
     }
 
-    if (book.available <= 0) {
+    if (book.available_copies <= 0) {
       toast({
         title: "Book Unavailable",
         description: "This book is currently out of stock.",
@@ -127,28 +138,43 @@ const TransactionManagement = () => {
       return;
     }
 
-    const newTransaction: Transaction = {
-      id: `TXN${String(transactions.length + 1).padStart(3, '0')}`,
-      bookId: issueForm.bookId,
-      bookTitle: book.title,
-      userId: issueForm.userId,
-      userName: user.name,
-      issueDate: new Date().toISOString().split('T')[0],
-      dueDate: issueForm.dueDate,
-      status: 'issued',
-      fine: 0
-    };
+    try {
+      const { data, error } = await supabase
+        .from('issued_books')
+        .insert([{
+          book_id: issueForm.bookId,
+          user_id: issueForm.userId,
+          due_date: issueForm.dueDate,
+          status: 'issued'
+        }])
+        .select()
+        .single();
 
-    setTransactions([...transactions, newTransaction]);
-    setIssueForm({ bookId: '', userId: '', dueDate: '' });
-    
-    toast({
-      title: "Book Issued Successfully",
-      description: `"${book.title}" has been issued to ${user.name}.`,
-    });
+      if (error) throw error;
+
+      await supabase
+        .from('books')
+        .update({ available_copies: book.available_copies - 1 })
+        .eq('id', issueForm.bookId);
+
+      fetchData();
+      
+      setIssueForm({ bookId: '', userId: '', dueDate: '' });
+      
+      toast({
+        title: "Book Issued Successfully",
+        description: `"${book.title}" has been issued.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleReturnBook = (e: React.FormEvent) => {
+  const handleReturnBook = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const transaction = transactions.find(t => t.id === returnForm.transactionId);
@@ -161,46 +187,68 @@ const TransactionManagement = () => {
       return;
     }
 
-    const fine = calculateFine(transaction.dueDate);
-    
-    setTransactions(transactions.map(t => 
-      t.id === returnForm.transactionId 
-        ? { ...t, returnDate: returnForm.returnDate, status: 'returned', fine }
-        : t
-    ));
-    
-    setReturnForm({ transactionId: '', returnDate: new Date().toISOString().split('T')[0] });
-    
-    toast({
-      title: "Book Returned Successfully",
-      description: fine > 0 
-        ? `Book returned with a fine of $${fine}.`
-        : "Book returned without any fine.",
-    });
+    const dueDate = new Date(transaction.due_date);
+    const returnDate = new Date(returnForm.returnDate);
+    const daysOverdue = Math.max(0, Math.ceil((returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const fine = daysOverdue * 1;
+
+    try {
+      const { error } = await supabase
+        .from('issued_books')
+        .update({ 
+          return_date: returnForm.returnDate, 
+          status: 'returned',
+          fine_amount: fine
+        })
+        .eq('id', returnForm.transactionId);
+
+      if (error) throw error;
+
+      const book = books.find(b => b.id === transaction.book_id);
+      if (book) {
+        await supabase
+          .from('books')
+          .update({ available_copies: book.available_copies + 1 })
+          .eq('id', transaction.book_id);
+      }
+
+      setReturnForm({ transactionId: '', returnDate: new Date().toISOString().split('T')[0] });
+      fetchData();
+      
+      toast({
+        title: "Book Returned Successfully",
+        description: fine > 0 
+          ? `Book returned with a fine of $${fine}.`
+          : "Book returned without any fine.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const filteredTransactions = transactions.filter(transaction =>
-    transaction.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const overdueTransactions = transactions.filter(t => {
-    if (t.status === 'returned') return false;
-    return calculateDaysOverdue(t.dueDate) > 0;
+  const filteredTransactions = transactions.filter(transaction => {
+    const bookTitle = transaction.books?.title || '';
+    const userName = transaction.profiles 
+      ? `${transaction.profiles.first_name} ${transaction.profiles.last_name}` 
+      : '';
+    
+    return bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           userName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Update overdue transactions
-  useEffect(() => {
-    setTransactions(prevTransactions => 
-      prevTransactions.map(t => {
-        if (t.status === 'issued' && calculateDaysOverdue(t.dueDate) > 0) {
-          return { ...t, status: 'overdue', fine: calculateFine(t.dueDate) };
-        }
-        return t;
-      })
+  const overdueTransactions = transactions.filter(t => t.status === 'overdue');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
-  }, []);
+  }
 
   return (
     <div className="space-y-6">
@@ -256,9 +304,9 @@ const TransactionManagement = () => {
                         <SelectValue placeholder="Choose a book" />
                       </SelectTrigger>
                       <SelectContent>
-                        {books.filter(book => book.available > 0).map((book) => (
+                        {books.map((book) => (
                           <SelectItem key={book.id} value={book.id}>
-                            {book.title} (Available: {book.available})
+                            {book.title} (Available: {book.available_copies})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -275,8 +323,8 @@ const TransactionManagement = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name} ({user.id})
+                          <SelectItem key={user.user_id} value={user.user_id}>
+                            {user.first_name} {user.last_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -331,7 +379,7 @@ const TransactionManagement = () => {
                       <SelectContent>
                         {transactions.filter(t => t.status !== 'returned').map((transaction) => (
                           <SelectItem key={transaction.id} value={transaction.id}>
-                            {transaction.bookTitle} - {transaction.userName} ({transaction.id})
+                            {transaction.books?.title} - {transaction.profiles?.first_name} {transaction.profiles?.last_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -349,33 +397,6 @@ const TransactionManagement = () => {
                     />
                   </div>
                 </div>
-
-                {returnForm.transactionId && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    {(() => {
-                      const transaction = transactions.find(t => t.id === returnForm.transactionId);
-                      if (!transaction) return null;
-                      
-                      const daysOverdue = calculateDaysOverdue(transaction.dueDate);
-                      const fine = calculateFine(transaction.dueDate);
-                      
-                      return (
-                        <div className="space-y-2">
-                          <h4 className="font-semibold">Transaction Details</h4>
-                          <p><strong>Book:</strong> {transaction.bookTitle}</p>
-                          <p><strong>User:</strong> {transaction.userName}</p>
-                          <p><strong>Due Date:</strong> {new Date(transaction.dueDate).toLocaleDateString()}</p>
-                          {daysOverdue > 0 && (
-                            <div className="text-warning">
-                              <p><strong>Days Overdue:</strong> {daysOverdue}</p>
-                              <p><strong>Fine Amount:</strong> ${fine}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
 
                 <Button type="submit" className="w-full md:w-auto">
                   <UserCheck className="mr-2 h-4 w-4" />
@@ -401,7 +422,7 @@ const TransactionManagement = () => {
               <div className="flex items-center space-x-2 mb-4">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search transactions by book, user, or ID..."
+                  placeholder="Search transactions by book or user..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
@@ -412,7 +433,6 @@ const TransactionManagement = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Transaction ID</TableHead>
                       <TableHead>Book</TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Issue Date</TableHead>
@@ -425,14 +445,15 @@ const TransactionManagement = () => {
                   <TableBody>
                     {filteredTransactions.map((transaction) => (
                       <TableRow key={transaction.id}>
-                        <TableCell className="font-mono">{transaction.id}</TableCell>
-                        <TableCell className="font-medium">{transaction.bookTitle}</TableCell>
-                        <TableCell>{transaction.userName}</TableCell>
-                        <TableCell>{new Date(transaction.issueDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(transaction.dueDate).toLocaleDateString()}</TableCell>
+                        <TableCell className="font-medium">{transaction.books?.title}</TableCell>
                         <TableCell>
-                          {transaction.returnDate 
-                            ? new Date(transaction.returnDate).toLocaleDateString()
+                          {transaction.profiles?.first_name} {transaction.profiles?.last_name}
+                        </TableCell>
+                        <TableCell>{new Date(transaction.issue_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(transaction.due_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {transaction.return_date 
+                            ? new Date(transaction.return_date).toLocaleDateString()
                             : '-'
                           }
                         </TableCell>
@@ -447,7 +468,7 @@ const TransactionManagement = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {transaction.fine > 0 ? `$${transaction.fine}` : '-'}
+                          {transaction.fine_amount > 0 ? `$${transaction.fine_amount}` : '-'}
                         </TableCell>
                       </TableRow>
                     ))}
