@@ -24,7 +24,6 @@ interface AuthContextType {
     username: string; 
     first_name: string; 
     last_name: string; 
-    role?: 'admin' | 'student';
   }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -42,21 +41,24 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Defer profile fetch to avoid deadlock
         if (session?.user) {
-          // Fetch user profile
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (!error && profileData) {
-            setProfile(profileData as Profile);
-          }
+          setTimeout(() => {
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .single()
+              .then(({ data: profileData, error }) => {
+                if (!error && profileData) {
+                  setProfile(profileData as Profile);
+                }
+              });
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -84,7 +86,6 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       username: string; 
       first_name: string; 
       last_name: string; 
-      role?: 'admin' | 'student';
     }
   ) => {
     try {
