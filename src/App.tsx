@@ -14,6 +14,8 @@ import BookCatalog from "./pages/BookCatalog";
 import BookManagement from "./pages/BookManagement";
 import UserManagement from "./pages/UserManagement";
 import TransactionManagement from "./pages/TransactionManagement";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import MyBooks from "./pages/MyBooks";
 import Favorites from "./pages/Favorites";
 import ReadingStats from "./pages/ReadingStats";
@@ -45,13 +47,14 @@ const App = () => (
               <Route path="books" element={<BookManagement />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="transactions" element={<TransactionManagement />} />
-              <Route path="reports" element={<div className="p-8 text-center text-muted-foreground">Reports - Coming Soon</div>} />
+              <Route path="reports" element={<Reports />} />
               {/* Student routes */}
               <Route path="catalog" element={<BookCatalog />} />
               <Route path="my-books" element={<MyBooks />} />
-            <Route path="favorites" element={<Favorites />} />
-            <Route path="history" element={<ReadingStats />} />
-              <Route path="settings" element={<div className="p-8 text-center text-muted-foreground">Settings - Coming Soon</div>} />
+              <Route path="favorites" element={<Favorites />} />
+              <Route path="history" element={<ReadingStats />} />
+              {/* Shared routes */}
+              <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
