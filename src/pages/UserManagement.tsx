@@ -39,13 +39,30 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers((data || []) as User[]);
+      if (profilesError) throw profilesError;
+
+      // Fetch all roles
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Map roles to profiles
+      const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
+      
+      const usersWithRoles = (profiles || []).map(profile => ({
+        ...profile,
+        role: roleMap.get(profile.user_id) || 'student'
+      }));
+      
+      setUsers(usersWithRoles as User[]);
     } catch (error: any) {
       toast({
         title: "Error Loading Users",
@@ -87,10 +104,16 @@ const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'student') => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
+      // First, delete existing role
+      await supabase
+        .from('user_roles')
+        .delete()
         .eq('user_id', userId);
+
+      // Then insert new role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
 
       if (error) throw error;
 

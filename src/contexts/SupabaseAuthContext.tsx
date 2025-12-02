@@ -3,16 +3,21 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface UserRole {
+  role: 'admin' | 'student';
+}
+
 interface Profile {
   id: string;
   user_id: string;
   username: string;
   email: string;
-  role: 'admin' | 'student';
   first_name: string;
   last_name: string;
   contact_number?: string;
   is_active: boolean;
+  user_roles?: UserRole[];
+  role?: 'admin' | 'student'; // Computed field
 }
 
 interface AuthContextType {
@@ -45,19 +50,31 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer profile fetch to avoid deadlock
+        // Defer profile and role fetch to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single()
-              .then(({ data: profileData, error }) => {
-                if (!error && profileData) {
-                  setProfile(profileData as Profile);
-                }
-              });
+          setTimeout(async () => {
+            try {
+              // Fetch profile
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .single();
+
+              if (profileError || !profileData) return;
+
+              // Fetch role separately
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .single();
+
+              const role = roleData?.role || 'student';
+              setProfile({ ...profileData, role } as Profile);
+            } catch (err) {
+              console.error('Error fetching profile:', err);
+            }
           }, 0);
         } else {
           setProfile(null);
